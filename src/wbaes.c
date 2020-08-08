@@ -145,8 +145,8 @@ void wbaes_gen(u8 key[16])
                     {
                         for (int y = 0; y < 16; y++)
                         {
-                            TypeII_IV[i][j][k][e][x][y] = nibble[nibble_inv[x] ^ nibble_inv[y]];
-                            TypeIII_IV[i][j][k][e][x][y] = nibble[nibble_inv[x] ^ nibble_inv[y]];
+                            TypeIV_II[i][j][k][e][x][y] = nibble[nibble_inv[x] ^ nibble_inv[y]];
+                            TypeIV_III[i][j][k][e][x][y] = nibble[nibble_inv[x] ^ nibble_inv[y]];
                         }
                     }
                 }
@@ -174,32 +174,32 @@ void wbaes_encrypt(u8 input[16], u8 output[16])
             c = TypeII[i][4*j + 2][state[4*j + 2]];
             d = TypeII[i][4*j + 3][state[4*j + 3]];
 
-            ab = (TypeII_IV[i][j][0][0][(a >> 28) & 0xf][(b >> 28) & 0xf] << 28) | (TypeII_IV[i][j][0][1][(a >> 24) & 0xf][(b >> 24) & 0xf] << 24) | (TypeII_IV[i][j][0][2][(a >> 20) & 0xf][(b >> 20) & 0xf] << 20) |(TypeII_IV[i][j][0][3][(a >> 16) & 0xf][(b >> 16) & 0xf] << 16) |\
-            (TypeII_IV[i][j][0][4][(a >> 12) & 0xf][(b >> 12) & 0xf] << 12) | (TypeII_IV[i][j][0][5][(a >> 8) & 0xf][(b >> 8) & 0xf] << 8) | (TypeII_IV[i][j][0][6][(a >> 4) & 0xf][(b >> 4) & 0xf] << 4) | TypeII_IV[i][j][0][7][a & 0xf][b & 0xf];
+            ab = (TypeIV_II[i][j][0][0][(a >> 28) & 0xf][(b >> 28) & 0xf] << 28) | (TypeIV_II[i][j][0][1][(a >> 24) & 0xf][(b >> 24) & 0xf] << 24) | (TypeIV_II[i][j][0][2][(a >> 20) & 0xf][(b >> 20) & 0xf] << 20) |(TypeIV_II[i][j][0][3][(a >> 16) & 0xf][(b >> 16) & 0xf] << 16) |\
+            (TypeIV_II[i][j][0][4][(a >> 12) & 0xf][(b >> 12) & 0xf] << 12) | (TypeIV_II[i][j][0][5][(a >> 8) & 0xf][(b >> 8) & 0xf] << 8) | (TypeIV_II[i][j][0][6][(a >> 4) & 0xf][(b >> 4) & 0xf] << 4) | TypeIV_II[i][j][0][7][a & 0xf][b & 0xf];
             
-            cd = (TypeII_IV[i][j][1][0][(c >> 28) & 0xf][(d >> 28) & 0xf] << 28) | (TypeII_IV[i][j][1][1][(c >> 24) & 0xf][(d >> 24) & 0xf] << 24) | (TypeII_IV[i][j][1][2][(c >> 20) & 0xf][(d >> 20) & 0xf] << 20) |(TypeII_IV[i][j][1][3][(c >> 16) & 0xf][(d >> 16) & 0xf] << 16) |\
-            (TypeII_IV[i][j][1][4][(c >> 12) & 0xf][(d >> 12) & 0xf] << 12) | (TypeII_IV[i][j][1][5][(c >> 8) & 0xf][(d >> 8) & 0xf] << 8) | (TypeII_IV[i][j][1][6][(c >> 4) & 0xf][(d >> 4) & 0xf] << 4) | TypeII_IV[i][j][1][7][c & 0xf][d & 0xf];
+            cd = (TypeIV_II[i][j][1][0][(c >> 28) & 0xf][(d >> 28) & 0xf] << 28) | (TypeIV_II[i][j][1][1][(c >> 24) & 0xf][(d >> 24) & 0xf] << 24) | (TypeIV_II[i][j][1][2][(c >> 20) & 0xf][(d >> 20) & 0xf] << 20) |(TypeIV_II[i][j][1][3][(c >> 16) & 0xf][(d >> 16) & 0xf] << 16) |\
+            (TypeIV_II[i][j][1][4][(c >> 12) & 0xf][(d >> 12) & 0xf] << 12) | (TypeIV_II[i][j][1][5][(c >> 8) & 0xf][(d >> 8) & 0xf] << 8) | (TypeIV_II[i][j][1][6][(c >> 4) & 0xf][(d >> 4) & 0xf] << 4) | TypeIV_II[i][j][1][7][c & 0xf][d & 0xf];
             
-            state[4*j + 0] = (TypeII_IV[i][j][2][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeII_IV[i][j][2][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
-            state[4*j + 1] = (TypeII_IV[i][j][2][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeII_IV[i][j][2][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
-            state[4*j + 2] = (TypeII_IV[i][j][2][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeII_IV[i][j][2][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
-            state[4*j + 3] = (TypeII_IV[i][j][2][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeII_IV[i][j][2][7][ab & 0xf][cd & 0xf];
+            state[4*j + 0] = (TypeIV_II[i][j][2][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeIV_II[i][j][2][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
+            state[4*j + 1] = (TypeIV_II[i][j][2][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeIV_II[i][j][2][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
+            state[4*j + 2] = (TypeIV_II[i][j][2][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeIV_II[i][j][2][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
+            state[4*j + 3] = (TypeIV_II[i][j][2][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeIV_II[i][j][2][7][ab & 0xf][cd & 0xf];
 
             a = TypeIII[i][4*j + 0][state[4*j + 0]];
             b = TypeIII[i][4*j + 1][state[4*j + 1]];
             c = TypeIII[i][4*j + 2][state[4*j + 2]];
             d = TypeIII[i][4*j + 3][state[4*j + 3]];
 
-            ab = (TypeIII_IV[i][j][0][0][(a >> 28) & 0xf][(b >> 28) & 0xf] << 28) | (TypeIII_IV[i][j][0][1][(a >> 24) & 0xf][(b >> 24) & 0xf] << 24) | (TypeIII_IV[i][j][0][2][(a >> 20) & 0xf][(b >> 20) & 0xf] << 20) |(TypeIII_IV[i][j][0][3][(a >> 16) & 0xf][(b >> 16) & 0xf] << 16) |\
-            (TypeIII_IV[i][j][0][4][(a >> 12) & 0xf][(b >> 12) & 0xf] << 12) | (TypeIII_IV[i][j][0][5][(a >> 8) & 0xf][(b >> 8) & 0xf] << 8) | (TypeIII_IV[i][j][0][6][(a >> 4) & 0xf][(b >> 4) & 0xf] << 4) | TypeIII_IV[i][j][0][7][a & 0xf][b & 0xf];
+            ab = (TypeIV_III[i][j][0][0][(a >> 28) & 0xf][(b >> 28) & 0xf] << 28) | (TypeIV_III[i][j][0][1][(a >> 24) & 0xf][(b >> 24) & 0xf] << 24) | (TypeIV_III[i][j][0][2][(a >> 20) & 0xf][(b >> 20) & 0xf] << 20) |(TypeIV_III[i][j][0][3][(a >> 16) & 0xf][(b >> 16) & 0xf] << 16) |\
+            (TypeIV_III[i][j][0][4][(a >> 12) & 0xf][(b >> 12) & 0xf] << 12) | (TypeIV_III[i][j][0][5][(a >> 8) & 0xf][(b >> 8) & 0xf] << 8) | (TypeIV_III[i][j][0][6][(a >> 4) & 0xf][(b >> 4) & 0xf] << 4) | TypeIV_III[i][j][0][7][a & 0xf][b & 0xf];
             
-            cd = (TypeIII_IV[i][j][1][0][(c >> 28) & 0xf][(d >> 28) & 0xf] << 28) | (TypeIII_IV[i][j][1][1][(c >> 24) & 0xf][(d >> 24) & 0xf] << 24) | (TypeIII_IV[i][j][1][2][(c >> 20) & 0xf][(d >> 20) & 0xf] << 20) |(TypeIII_IV[i][j][1][3][(c >> 16) & 0xf][(d >> 16) & 0xf] << 16) |\
-            (TypeIII_IV[i][j][1][4][(c >> 12) & 0xf][(d >> 12) & 0xf] << 12) | (TypeIII_IV[i][j][1][5][(c >> 8) & 0xf][(d >> 8) & 0xf] << 8) | (TypeIII_IV[i][j][1][6][(c >> 4) & 0xf][(d >> 4) & 0xf] << 4) | TypeIII_IV[i][j][1][7][c & 0xf][d & 0xf];
+            cd = (TypeIV_III[i][j][1][0][(c >> 28) & 0xf][(d >> 28) & 0xf] << 28) | (TypeIV_III[i][j][1][1][(c >> 24) & 0xf][(d >> 24) & 0xf] << 24) | (TypeIV_III[i][j][1][2][(c >> 20) & 0xf][(d >> 20) & 0xf] << 20) |(TypeIV_III[i][j][1][3][(c >> 16) & 0xf][(d >> 16) & 0xf] << 16) |\
+            (TypeIV_III[i][j][1][4][(c >> 12) & 0xf][(d >> 12) & 0xf] << 12) | (TypeIV_III[i][j][1][5][(c >> 8) & 0xf][(d >> 8) & 0xf] << 8) | (TypeIV_III[i][j][1][6][(c >> 4) & 0xf][(d >> 4) & 0xf] << 4) | TypeIV_III[i][j][1][7][c & 0xf][d & 0xf];
             
-            state[4*j + 0] = (TypeIII_IV[i][j][2][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeIII_IV[i][j][2][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
-            state[4*j + 1] = (TypeIII_IV[i][j][2][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeIII_IV[i][j][2][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
-            state[4*j + 2] = (TypeIII_IV[i][j][2][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeIII_IV[i][j][2][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
-            state[4*j + 3] = (TypeIII_IV[i][j][2][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeIII_IV[i][j][2][7][ab & 0xf][cd & 0xf];
+            state[4*j + 0] = (TypeIV_III[i][j][2][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeIV_III[i][j][2][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
+            state[4*j + 1] = (TypeIV_III[i][j][2][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeIV_III[i][j][2][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
+            state[4*j + 2] = (TypeIV_III[i][j][2][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeIV_III[i][j][2][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
+            state[4*j + 3] = (TypeIV_III[i][j][2][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeIV_III[i][j][2][7][ab & 0xf][cd & 0xf];
         }
     }
     //Round 10
