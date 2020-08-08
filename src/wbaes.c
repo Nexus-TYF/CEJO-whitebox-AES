@@ -76,10 +76,8 @@ void wbaes_gen(u8 key[16])
         int shiftbit[]={24, 16, 8, 0};
         for(int x = 0; x < 256; x++)
         {
-            temp_u8 = x;
-            temp_u8 = (nibble_inv[(temp_u8 & 0xf0) >> 4] << 4) | (nibble_inv[(temp_u8 & 0x0f)]); 
-            temp_u32 = temp_u8;
-            temp_u32 = temp_u32 << shiftbit[j % 4];
+            temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]); 
+            temp_u32 = temp_u8 << shiftbit[j % 4];
             temp_u32 = MatMulNumM32(MB_inv[0][columnindex[j]], temp_u32);
             temp_u32 = MatMulNumM32(Out_L[0][columnindex[j]], temp_u32);
             TypeIII[0][j][x] = (nibble[(temp_u32 & 0xf0000000) >> 28] << 28) | (nibble[(temp_u32 & 0x0f000000) >> 24] << 24) | (nibble[(temp_u32 & 0x00f00000) >> 20] << 20) | (nibble[(temp_u32 & 0x000f0000) >> 16] << 16) | (nibble[(temp_u32 & 0x0000f000) >> 12] << 12) | (nibble[(temp_u32 & 0x00000f00) >> 8] << 8) | (nibble[(temp_u32 & 0x000000f0) >> 4] << 4) | (nibble[(temp_u32 & 0x0000000f)]);
@@ -97,8 +95,7 @@ void wbaes_gen(u8 key[16])
             u32 temp_u32;
             for(int x = 0; x < 256; x++)
             {
-                temp_u8 = x;
-                temp_u8 = (nibble_inv[(temp_u8 & 0xf0) >> 4] << 4) | (nibble_inv[(temp_u8 & 0x0f)]);
+                temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]);
                 temp_u8 = MatMulNumM8(L_inv[i - 1][shiftindex[j]], temp_u8);
                 temp_u8 = SBox[temp_u8 ^ expandedKey[16 * i + j]];
                 temp_u32 = Tyi[j % 4][temp_u8];
@@ -114,10 +111,8 @@ void wbaes_gen(u8 key[16])
             int shiftbit[]={24, 16, 8, 0};
             for(int x = 0; x < 256; x++)
             {
-                temp_u8 = x;
-                temp_u8 = (nibble_inv[(temp_u8 & 0xf0) >> 4] << 4) | (nibble_inv[(temp_u8 & 0x0f)]);
-                temp_u32 = temp_u8;
-                temp_u32 = temp_u32 << shiftbit[j % 4];
+                temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]);
+                temp_u32 = temp_u8 << shiftbit[j % 4];
                 temp_u32 = MatMulNumM32(MB_inv[i][columnindex[j]], temp_u32);
                 temp_u32 = MatMulNumM32(Out_L[i][columnindex[j]], temp_u32);
                 TypeIII[i][j][x] = (nibble[(temp_u32 & 0xf0000000) >> 28] << 28) | (nibble[(temp_u32 & 0x0f000000) >> 24] << 24) | (nibble[(temp_u32 & 0x00f00000) >> 20] << 20) | (nibble[(temp_u32 & 0x000f0000) >> 16] << 16) | (nibble[(temp_u32 & 0x0000f000) >> 12] << 12) | (nibble[(temp_u32 & 0x00000f00) >> 8] << 8) | (nibble[(temp_u32 & 0x000000f0) >> 4] << 4) | (nibble[(temp_u32 & 0x0000000f)]);
@@ -132,11 +127,9 @@ void wbaes_gen(u8 key[16])
         u8 temp_u8;
         for(int x = 0; x < 256; x++)
         {
-            temp_u8 = x;
-            temp_u8 = (nibble_inv[(temp_u8 & 0xf0) >> 4] << 4) | (nibble_inv[(temp_u8 & 0x0f)]);
+            temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]);
             temp_u8 = MatMulNumM8(L_inv[8][shiftindex[j]], temp_u8);
-            temp_u8 = SBox[temp_u8 ^ expandedKey[16 * 9 + j]];
-            TypeII[9][j][x] = temp_u8 ^ expandedKey[16 * 10 + j];
+            TypeII[9][j][x] = SBox[temp_u8 ^ expandedKey[16 * 9 + j]] ^ expandedKey[16 * 10 + j];
         }
     }
 
@@ -187,10 +180,10 @@ void wbaes_encrypt(u8 input[16], u8 output[16])
             cd = (TypeII_IV[i][j][1][0][(c >> 28) & 0xf][(d >> 28) & 0xf] << 28) | (TypeII_IV[i][j][1][1][(c >> 24) & 0xf][(d >> 24) & 0xf] << 24) | (TypeII_IV[i][j][1][2][(c >> 20) & 0xf][(d >> 20) & 0xf] << 20) |(TypeII_IV[i][j][1][3][(c >> 16) & 0xf][(d >> 16) & 0xf] << 16) |\
             (TypeII_IV[i][j][1][4][(c >> 12) & 0xf][(d >> 12) & 0xf] << 12) | (TypeII_IV[i][j][1][5][(c >> 8) & 0xf][(d >> 8) & 0xf] << 8) | (TypeII_IV[i][j][1][6][(c >> 4) & 0xf][(d >> 4) & 0xf] << 4) | TypeII_IV[i][j][1][7][c & 0xf][d & 0xf];
             
-            state[4*j + 0] = (TypeII_IV[i][j][3][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeII_IV[i][j][3][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
-            state[4*j + 1] = (TypeII_IV[i][j][3][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeII_IV[i][j][3][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
-            state[4*j + 2] = (TypeII_IV[i][j][3][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeII_IV[i][j][3][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
-            state[4*j + 3] = (TypeII_IV[i][j][3][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeII_IV[i][j][3][7][ab & 0xf][cd & 0xf];
+            state[4*j + 0] = (TypeII_IV[i][j][2][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeII_IV[i][j][2][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
+            state[4*j + 1] = (TypeII_IV[i][j][2][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeII_IV[i][j][2][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
+            state[4*j + 2] = (TypeII_IV[i][j][2][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeII_IV[i][j][2][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
+            state[4*j + 3] = (TypeII_IV[i][j][2][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeII_IV[i][j][2][7][ab & 0xf][cd & 0xf];
 
             a = TypeIII[i][4*j + 0][state[4*j + 0]];
             b = TypeIII[i][4*j + 1][state[4*j + 1]];
@@ -203,10 +196,10 @@ void wbaes_encrypt(u8 input[16], u8 output[16])
             cd = (TypeIII_IV[i][j][1][0][(c >> 28) & 0xf][(d >> 28) & 0xf] << 28) | (TypeIII_IV[i][j][1][1][(c >> 24) & 0xf][(d >> 24) & 0xf] << 24) | (TypeIII_IV[i][j][1][2][(c >> 20) & 0xf][(d >> 20) & 0xf] << 20) |(TypeIII_IV[i][j][1][3][(c >> 16) & 0xf][(d >> 16) & 0xf] << 16) |\
             (TypeIII_IV[i][j][1][4][(c >> 12) & 0xf][(d >> 12) & 0xf] << 12) | (TypeIII_IV[i][j][1][5][(c >> 8) & 0xf][(d >> 8) & 0xf] << 8) | (TypeIII_IV[i][j][1][6][(c >> 4) & 0xf][(d >> 4) & 0xf] << 4) | TypeIII_IV[i][j][1][7][c & 0xf][d & 0xf];
             
-            state[4*j + 0] = (TypeIII_IV[i][j][3][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeIII_IV[i][j][3][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
-            state[4*j + 1] = (TypeIII_IV[i][j][3][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeIII_IV[i][j][3][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
-            state[4*j + 2] = (TypeIII_IV[i][j][3][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeIII_IV[i][j][3][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
-            state[4*j + 3] = (TypeIII_IV[i][j][3][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeIII_IV[i][j][3][7][ab & 0xf][cd & 0xf];
+            state[4*j + 0] = (TypeIII_IV[i][j][2][0][(ab >> 28) & 0xf][(cd >> 28) & 0xf] << 4) | TypeIII_IV[i][j][2][1][(ab >> 24) & 0xf][(cd >> 24) & 0xf];
+            state[4*j + 1] = (TypeIII_IV[i][j][2][2][(ab >> 20) & 0xf][(cd >> 20) & 0xf] << 4) | TypeIII_IV[i][j][2][3][(ab >> 16) & 0xf][(cd >> 16) & 0xf];
+            state[4*j + 2] = (TypeIII_IV[i][j][2][4][(ab >> 12) & 0xf][(cd >> 12) & 0xf] << 4) | TypeIII_IV[i][j][2][5][(ab >> 8) & 0xf][(cd >> 8) & 0xf];
+            state[4*j + 3] = (TypeIII_IV[i][j][2][6][(ab >> 4) & 0xf][(cd >> 4) & 0xf] << 4) | TypeIII_IV[i][j][2][7][ab & 0xf][cd & 0xf];
         }
     }
     //Round 10
