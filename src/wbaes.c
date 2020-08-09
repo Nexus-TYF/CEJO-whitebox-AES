@@ -9,14 +9,32 @@ void printstate(unsigned char * in)
     printf("\n");
 }
 
+void generatePermutation(u8 *permutation, u8 *inverse)
+{
+	int i, j;
+	u8 temp;
+	for (i = 0; i < 16; i++)
+	{
+		permutation[i] = i;
+	}
+	for (i = 0; i < 15; i++)
+	{
+		j = cus_random()%(16 - i);
+		temp = permutation[i];
+		permutation[i] = permutation[i+j];
+		permutation[i + j] = temp;
+	}
+	for (i = 0; i < 16; i++)
+	{
+		inverse[permutation[i]] = i;
+	}
+}
+
 void wbaes_gen(u8 key[16])
 {
     u8 expandedKey[176];
     expandKey (key, expandedKey);
     
-    static u8 nibble[16] = {0x01, 0x02, 0x0C, 0x05, 0x07, 0x08, 0x0A, 0x0F, 0x04, 0x0D, 0x0B, 0x0E, 0x09, 0x06, 0x00, 0x03};
-    static u8 nibble_inv[16] = {0x0e, 0x00, 0x01, 0x0f, 0x08, 0x03, 0x0d, 0x04, 0x05, 0x0c, 0x06, 0x0a, 0x02, 0x09, 0x0b, 0x07}; 
-
     M8 L[9][16];
     M8 L_inv[9][16];
     M32 MB[9][4];
@@ -53,6 +71,91 @@ void wbaes_gen(u8 key[16])
             MatrixcomM8to32(L[i][4 * j], L[i][4 * j + 1], L[i][4 * j + 2], L[i][4 * j + 3], &Out_L[i][j]);
         }
     }
+
+    u8 TypeII_out[9][16][8][16];
+    u8 TypeII_out_inv[9][16][8][16];
+    u8 TypeIV_II_out1[9][8][8][16];
+    u8 TypeIV_II_out1_inv[9][8][8][16];
+    u8 TypeIV_II_out2[9][4][8][16];
+    u8 TypeIV_II_out2_inv[9][4][8][16];
+
+    u8 TypeIII_out[9][16][8][16];
+    u8 TypeIII_out_inv[9][16][8][16];
+    u8 TypeIV_III_out1[9][8][8][16];
+    u8 TypeIV_III_out1_inv[9][8][8][16];
+    u8 TypeIV_III_out2[9][4][8][16];
+    u8 TypeIV_III_out2_inv[9][4][8][16];
+
+    InitRandom((unsigned int)time(NULL));
+    for(int i = 0; i < 9; i++)
+    {
+        for(int j = 0; j < 16; j++)
+        {
+            for(int k = 0; k < 8; k++)
+            {
+                u8 permutation[16];
+                u8 inverse[16];
+                generatePermutation(permutation, inverse);
+                for(int x = 0; x < 16; x++)
+                {
+                    TypeII_out[i][j][k][x] = permutation[x];
+                    TypeII_out_inv[i][j][k][x] = inverse[x];
+                }
+                generatePermutation(permutation, inverse);
+                for(int x = 0; x < 16; x++)
+                {
+                    TypeIII_out[i][j][k][x] = permutation[x];
+                    TypeIII_out_inv[i][j][k][x] = inverse[x];
+                }
+            }
+        }
+    }
+    for(int i = 0; i < 9; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            for(int k = 0; k < 8; k++)
+            {
+                u8 permutation[16];
+                u8 inverse[16];
+                generatePermutation(permutation, inverse);
+                for(int x = 0; x < 16; x++)
+                {
+                    TypeIV_II_out1[i][j][k][x] = permutation[x];
+                    TypeIV_II_out1_inv[i][j][k][x] = inverse[x];
+                }
+                generatePermutation(permutation, inverse);
+                for(int x = 0; x < 16; x++)
+                {
+                    TypeIV_III_out1[i][j][k][x] = permutation[x];
+                    TypeIV_III_out1_inv[i][j][k][x] = inverse[x];
+                }
+            }
+        }
+    }
+    for(int i = 0; i < 9; i++)
+    {
+        for(int j = 0; j < 4; j++)
+        {
+            for(int k = 0; k < 8; k++)
+            {
+                u8 permutation[16];
+                u8 inverse[16];
+                generatePermutation(permutation, inverse);
+                for(int x = 0; x < 16; x++)
+                {
+                    TypeIV_II_out2[i][j][k][x] = permutation[x];
+                    TypeIV_II_out2_inv[i][j][k][x] = inverse[x];
+                }
+                generatePermutation(permutation, inverse);
+                for(int x = 0; x < 16; x++)
+                {
+                    TypeIV_III_out2[i][j][k][x] = permutation[x];
+                    TypeIV_III_out2_inv[i][j][k][x] = inverse[x];
+                }
+            }
+        }
+    }
     
     int columnindex[]={0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
     //Round 1
@@ -66,7 +169,7 @@ void wbaes_gen(u8 key[16])
             temp_u8 = SBox[x ^ expandedKey[16 * 0 + j]];
             temp_u32 = Tyi[j % 4][temp_u8];
             temp_u32 = MatMulNumM32(MB[0][columnindex[j]], temp_u32);
-            TypeII[0][j][x] = (nibble[(temp_u32 & 0xf0000000) >> 28] << 28) | (nibble[(temp_u32 & 0x0f000000) >> 24] << 24) | (nibble[(temp_u32 & 0x00f00000) >> 20] << 20) | (nibble[(temp_u32 & 0x000f0000) >> 16] << 16) | (nibble[(temp_u32 & 0x0000f000) >> 12] << 12) | (nibble[(temp_u32 & 0x00000f00) >> 8] << 8) | (nibble[(temp_u32 & 0x000000f0) >> 4] << 4) | (nibble[(temp_u32 & 0x0000000f)]);
+            TypeII[0][j][x] = (TypeII_out[0][j][0][(temp_u32 & 0xf0000000) >> 28] << 28) | (TypeII_out[0][j][1][(temp_u32 & 0x0f000000) >> 24] << 24) | (TypeII_out[0][j][2][(temp_u32 & 0x00f00000) >> 20] << 20) | (TypeII_out[0][j][3][(temp_u32 & 0x000f0000) >> 16] << 16) | (TypeII_out[0][j][4][(temp_u32 & 0x0000f000) >> 12] << 12) | (TypeII_out[0][j][5][(temp_u32 & 0x00000f00) >> 8] << 8) | (TypeII_out[0][j][6][(temp_u32 & 0x000000f0) >> 4] << 4) | (TypeII_out[0][j][7][(temp_u32 & 0x0000000f)]);
         }
     }
     for(int j = 0; j < 16; j++)//type_III
@@ -76,11 +179,11 @@ void wbaes_gen(u8 key[16])
         int shiftbit[]={24, 16, 8, 0};
         for(int x = 0; x < 256; x++)
         {
-            temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]); 
+            temp_u8 = (TypeIV_II_out2_inv[0][columnindex[j]][(j % 4) * 2][(x & 0xf0) >> 4] << 4) | (TypeIV_II_out2_inv[0][columnindex[j]][(j % 4) * 2 + 1][(x & 0x0f)]); 
             temp_u32 = temp_u8 << shiftbit[j % 4];
             temp_u32 = MatMulNumM32(MB_inv[0][columnindex[j]], temp_u32);
             temp_u32 = MatMulNumM32(Out_L[0][columnindex[j]], temp_u32);
-            TypeIII[0][j][x] = (nibble[(temp_u32 & 0xf0000000) >> 28] << 28) | (nibble[(temp_u32 & 0x0f000000) >> 24] << 24) | (nibble[(temp_u32 & 0x00f00000) >> 20] << 20) | (nibble[(temp_u32 & 0x000f0000) >> 16] << 16) | (nibble[(temp_u32 & 0x0000f000) >> 12] << 12) | (nibble[(temp_u32 & 0x00000f00) >> 8] << 8) | (nibble[(temp_u32 & 0x000000f0) >> 4] << 4) | (nibble[(temp_u32 & 0x0000000f)]);
+            TypeIII[0][j][x] = (TypeIII_out[0][j][0][(temp_u32 & 0xf0000000) >> 28] << 28) | (TypeIII_out[0][j][1][(temp_u32 & 0x0f000000) >> 24] << 24) | (TypeIII_out[0][j][2][(temp_u32 & 0x00f00000) >> 20] << 20) | (TypeIII_out[0][j][3][(temp_u32 & 0x000f0000) >> 16] << 16) | (TypeIII_out[0][j][4][(temp_u32 & 0x0000f000) >> 12] << 12) | (TypeIII_out[0][j][5][(temp_u32 & 0x00000f00) >> 8] << 8) | (TypeIII_out[0][j][6][(temp_u32 & 0x000000f0) >> 4] << 4) | (TypeIII_out[0][j][7][(temp_u32 & 0x0000000f)]);
         }
     }
 
@@ -95,12 +198,12 @@ void wbaes_gen(u8 key[16])
             u32 temp_u32;
             for(int x = 0; x < 256; x++)
             {
-                temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]);
+                temp_u8 = (TypeIV_III_out2_inv[i - 1][columnindex[shiftindex[j]]][(shiftindex[j] % 4) * 2][(x & 0xf0) >> 4] << 4) | (TypeIV_III_out2_inv[i - 1][columnindex[shiftindex[j]]][(shiftindex[j] % 4) * 2 + 1][(x & 0x0f)]);
                 temp_u8 = MatMulNumM8(L_inv[i - 1][shiftindex[j]], temp_u8);
                 temp_u8 = SBox[temp_u8 ^ expandedKey[16 * i + j]];
                 temp_u32 = Tyi[j % 4][temp_u8];
                 temp_u32 = MatMulNumM32(MB[i][columnindex[j]], temp_u32);
-                TypeII[i][j][x] = (nibble[(temp_u32 & 0xf0000000) >> 28] << 28) | (nibble[(temp_u32 & 0x0f000000) >> 24] << 24) | (nibble[(temp_u32 & 0x00f00000) >> 20] << 20) | (nibble[(temp_u32 & 0x000f0000) >> 16] << 16) | (nibble[(temp_u32 & 0x0000f000) >> 12] << 12) | (nibble[(temp_u32 & 0x00000f00) >> 8] << 8) | (nibble[(temp_u32 & 0x000000f0) >> 4] << 4) | (nibble[(temp_u32 & 0x0000000f)]);
+                TypeII[i][j][x] = (TypeII_out[i][j][0][(temp_u32 & 0xf0000000) >> 28] << 28) | (TypeII_out[i][j][1][(temp_u32 & 0x0f000000) >> 24] << 24) | (TypeII_out[i][j][2][(temp_u32 & 0x00f00000) >> 20] << 20) | (TypeII_out[i][j][3][(temp_u32 & 0x000f0000) >> 16] << 16) | (TypeII_out[i][j][4][(temp_u32 & 0x0000f000) >> 12] << 12) | (TypeII_out[i][j][5][(temp_u32 & 0x00000f00) >> 8] << 8) | (TypeII_out[i][j][6][(temp_u32 & 0x000000f0) >> 4] << 4) | (TypeII_out[i][j][7][(temp_u32 & 0x0000000f)]);
             }
         }
     
@@ -111,11 +214,11 @@ void wbaes_gen(u8 key[16])
             int shiftbit[]={24, 16, 8, 0};
             for(int x = 0; x < 256; x++)
             {
-                temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]);
+                temp_u8 = (TypeIV_II_out2_inv[i][columnindex[j]][(j % 4) * 2][(x & 0xf0) >> 4] << 4) | (TypeIV_II_out2_inv[i][columnindex[j]][(j % 4) * 2 + 1][(x & 0x0f)]);
                 temp_u32 = temp_u8 << shiftbit[j % 4];
                 temp_u32 = MatMulNumM32(MB_inv[i][columnindex[j]], temp_u32);
                 temp_u32 = MatMulNumM32(Out_L[i][columnindex[j]], temp_u32);
-                TypeIII[i][j][x] = (nibble[(temp_u32 & 0xf0000000) >> 28] << 28) | (nibble[(temp_u32 & 0x0f000000) >> 24] << 24) | (nibble[(temp_u32 & 0x00f00000) >> 20] << 20) | (nibble[(temp_u32 & 0x000f0000) >> 16] << 16) | (nibble[(temp_u32 & 0x0000f000) >> 12] << 12) | (nibble[(temp_u32 & 0x00000f00) >> 8] << 8) | (nibble[(temp_u32 & 0x000000f0) >> 4] << 4) | (nibble[(temp_u32 & 0x0000000f)]);
+                TypeIII[i][j][x] = (TypeIII_out[i][j][0][(temp_u32 & 0xf0000000) >> 28] << 28) | (TypeIII_out[i][j][1][(temp_u32 & 0x0f000000) >> 24] << 24) | (TypeIII_out[i][j][2][(temp_u32 & 0x00f00000) >> 20] << 20) | (TypeIII_out[i][j][3][(temp_u32 & 0x000f0000) >> 16] << 16) | (TypeIII_out[i][j][4][(temp_u32 & 0x0000f000) >> 12] << 12) | (TypeIII_out[i][j][5][(temp_u32 & 0x00000f00) >> 8] << 8) | (TypeIII_out[i][j][6][(temp_u32 & 0x000000f0) >> 4] << 4) | (TypeIII_out[i][j][7][(temp_u32 & 0x0000000f)]);
             }
         }
     }
@@ -127,33 +230,34 @@ void wbaes_gen(u8 key[16])
         u8 temp_u8;
         for(int x = 0; x < 256; x++)
         {
-            temp_u8 = (nibble_inv[(x & 0xf0) >> 4] << 4) | (nibble_inv[(x & 0x0f)]);
+            temp_u8 = (TypeIV_III_out2_inv[8][columnindex[shiftindex[j]]][(shiftindex[j] % 4) * 2][(x & 0xf0) >> 4] << 4) | (TypeIV_III_out2_inv[8][columnindex[shiftindex[j]]][(shiftindex[j] % 4) * 2 + 1][(x & 0x0f)]);
             temp_u8 = MatMulNumM8(L_inv[8][shiftindex[j]], temp_u8);
             TypeII[9][j][x] = SBox[temp_u8 ^ expandedKey[16 * 9 + j]] ^ expandedKey[16 * 10 + j];
         }
     }
 
-    for (int i = 0; i < 9; i++)
+    for(int i = 0; i < 9; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for(int j = 0; j < 4; j++)
         {
-            for(int k = 0; k < 3; k++)
+            for(int k = 0; k < 8; k++)
             {
-                for(int e = 0; e < 8; e++)
+                for(int x = 0; x < 16; x++)
                 {
-                    for (int x = 0; x < 16; x++)
+                    for(int y = 0; y < 16; y++)
                     {
-                        for (int y = 0; y < 16; y++)
-                        {
-                            TypeIV_II[i][j][k][e][x][y] = nibble[nibble_inv[x] ^ nibble_inv[y]];
-                            TypeIV_III[i][j][k][e][x][y] = nibble[nibble_inv[x] ^ nibble_inv[y]];
-                        }
+                        TypeIV_II[i][j][0][k][x][y] = TypeIV_II_out1[i][2 * j][k][TypeII_out_inv[i][4 * j][k][x] ^ TypeII_out_inv[i][4 * j + 1][k][y]];
+                        TypeIV_II[i][j][1][k][x][y] = TypeIV_II_out1[i][2 * j + 1][k][TypeII_out_inv[i][4 * j + 2][k][x] ^ TypeII_out_inv[i][4 * j + 3][k][y]];
+                        TypeIV_II[i][j][2][k][x][y] = TypeIV_II_out2[i][j][k][TypeIV_II_out1_inv[i][2 * j][k][x] ^ TypeIV_II_out1_inv[i][2 * j + 1][k][y]];
+
+                        TypeIV_III[i][j][0][k][x][y] = TypeIV_III_out1[i][2 * j][k][TypeIII_out_inv[i][4 * j][k][x] ^ TypeIII_out_inv[i][4 * j + 1][k][y]];
+                        TypeIV_III[i][j][1][k][x][y] = TypeIV_III_out1[i][2 * j + 1][k][TypeIII_out_inv[i][4 * j + 2][k][x] ^ TypeIII_out_inv[i][4 * j + 3][k][y]];
+                        TypeIV_III[i][j][2][k][x][y] = TypeIV_III_out2[i][j][k][TypeIV_III_out1_inv[i][2 * j][k][x] ^ TypeIV_III_out1_inv[i][2 * j + 1][k][y]];
                     }
                 }
             }
         }
     }
-
 }
 void wbaes_encrypt(u8 input[16], u8 output[16]) 
 {
