@@ -39,6 +39,10 @@ void wbaes_gen(u8 key[16])
     M8 L_inv[9][16];
     M32 MB[9][4];
     M32 MB_inv[9][4];
+    M8 ex_in[16];
+    M8 ex_in_inv[16];
+    M8 ex_out[16];
+    M8 ex_out_inv[16];
     for(int i = 0; i < 9; i++)
     {
         for(int j = 0; j < 16; j++)
@@ -52,6 +56,11 @@ void wbaes_gen(u8 key[16])
         {
             genMatpairM32(&MB[i][j], &MB_inv[i][j]);
         }
+    }
+    for(int i = 0; i < 16; i++)
+    {
+        genMatpairM8(&ex_in[i], &ex_in_inv[i]);
+        genMatpairM8(&ex_out[i], &ex_out_inv[i]);
     }
 
     u32 Tyi[4][256];
@@ -85,6 +94,11 @@ void wbaes_gen(u8 key[16])
     u8 TypeIV_III_out1_inv[9][8][8][16];
     u8 TypeIV_III_out2[9][4][8][16];
     u8 TypeIV_III_out2_inv[9][4][8][16];
+
+    u8 TypeII_ex_in[16][2][16];
+    u8 TypeII_ex_in_inv[16][2][16];
+    u8 TypeIII_ex_out[16][2][16];
+    u8 TypeIII_ex_out_inv[16][2][16];
 
     InitRandom((unsigned int)time(NULL));
     for(int i = 0; i < 9; i++)
@@ -156,8 +170,30 @@ void wbaes_gen(u8 key[16])
             }
         }
     }
+
+    for(int i = 0; i < 16; i++)
+    {
+        for(int j = 0; j < 2; j++)
+        {
+            u8 permutation[16];
+            u8 inverse[16];
+            generatePermutation(permutation, inverse);
+            for(int x = 0; x < 16; x++)
+            {
+                TypeII_ex_in[i][j][x] = permutation[x];
+                TypeII_ex_in_inv[i][j][x] = inverse[x];
+            }
+            generatePermutation(permutation, inverse);
+            for(int x = 0; x < 16; x++)
+            {
+                TypeIII_ex_out[i][j][x] = permutation[x];
+                TypeIII_ex_out_inv[i][j][x] = inverse[x];
+            }
+        }
+    }
     
     int columnindex[]={0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
+    int shiftindex[]={0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11};
     //Round 1
     shiftRows (expandedKey + 16 * 0);
     for(int j = 0; j < 16; j++)//type_II
@@ -166,7 +202,9 @@ void wbaes_gen(u8 key[16])
         u32 temp_u32;
         for(int x = 0; x < 256; x++)
         {
-            temp_u8 = SBox[x ^ expandedKey[16 * 0 + j]];
+            temp_u8 = (TypeII_ex_in_inv[shiftindex[j]][0][(x & 0xf0) >> 4] << 4) | (TypeII_ex_in_inv[shiftindex[j]][1][(x & 0x0f)]);
+            temp_u8 = MatMulNumM8(ex_in_inv[shiftindex[j]], temp_u8);
+            temp_u8 = SBox[temp_u8 ^ expandedKey[16 * 0 + j]];
             temp_u32 = Tyi[j % 4][temp_u8];
             temp_u32 = MatMulNumM32(MB[0][columnindex[j]], temp_u32);
             TypeII[0][j][x] = (TypeII_out[0][j][0][(temp_u32 & 0xf0000000) >> 28] << 28) | (TypeII_out[0][j][1][(temp_u32 & 0x0f000000) >> 24] << 24) | (TypeII_out[0][j][2][(temp_u32 & 0x00f00000) >> 20] << 20) | (TypeII_out[0][j][3][(temp_u32 & 0x000f0000) >> 16] << 16) | (TypeII_out[0][j][4][(temp_u32 & 0x0000f000) >> 12] << 12) | (TypeII_out[0][j][5][(temp_u32 & 0x00000f00) >> 8] << 8) | (TypeII_out[0][j][6][(temp_u32 & 0x000000f0) >> 4] << 4) | (TypeII_out[0][j][7][(temp_u32 & 0x0000000f)]);
@@ -188,7 +226,6 @@ void wbaes_gen(u8 key[16])
     }
 
     //Round 2-9
-    int shiftindex[]={0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11};
     for (int i = 1; i < 9; i++)//Type_II
     {
         shiftRows (expandedKey + 16 * i);
@@ -232,7 +269,9 @@ void wbaes_gen(u8 key[16])
         {
             temp_u8 = (TypeIV_III_out2_inv[8][columnindex[shiftindex[j]]][(shiftindex[j] % 4) * 2][(x & 0xf0) >> 4] << 4) | (TypeIV_III_out2_inv[8][columnindex[shiftindex[j]]][(shiftindex[j] % 4) * 2 + 1][(x & 0x0f)]);
             temp_u8 = MatMulNumM8(L_inv[8][shiftindex[j]], temp_u8);
-            TypeII[9][j][x] = SBox[temp_u8 ^ expandedKey[16 * 9 + j]] ^ expandedKey[16 * 10 + j];
+            temp_u8 = SBox[temp_u8 ^ expandedKey[16 * 9 + j]] ^ expandedKey[16 * 10 + j];
+            temp_u8 = MatMulNumM8(ex_out[j], temp_u8);
+            TypeII[9][j][x] = (TypeIII_ex_out[j][0][(temp_u8 & 0xf0) >> 4] << 4) | (TypeIII_ex_out[j][1][(temp_u8 & 0x0f)]);
         }
     }
 
@@ -256,6 +295,18 @@ void wbaes_gen(u8 key[16])
                     }
                 }
             }
+        }
+    }
+
+    for(int i = 0; i < 16; i++)
+    {
+        u8 temp_u8;
+        for(int x = 0; x < 256; x++)
+        {
+            temp_u8 = MatMulNumM8(ex_in[i], x);
+            TypeIa[i][x] = (TypeII_ex_in[i][0][(temp_u8 & 0xf0) >> 4] << 4) | (TypeII_ex_in[i][1][(temp_u8 & 0x0f)]);
+            temp_u8 = (TypeIII_ex_out_inv[i][0][(x & 0xf0) >> 4] << 4) | (TypeIII_ex_out_inv[i][1][(x & 0x0f)]);
+            TypeIb[i][x] = MatMulNumM8(ex_out_inv[i], temp_u8);
         }
     }
 }
@@ -310,11 +361,6 @@ void wbaes_encrypt(u8 input[16], u8 output[16])
     shiftRows(state);
     for (int j = 0; j < 16; j++) 
     {
-        state[j] = TypeII[9][j][state[j]];
-    }
-
-    for (int i = 0; i < 16; i++)
-    {    
-        output[i] = state[i];
+        output[j] = TypeII[9][j][state[j]];
     }
 }
